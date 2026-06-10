@@ -5,11 +5,12 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.102"
-axum = "0.8.9"
-serde = "1.0.228"
-serde_json = "1.0.150"
 tokio = { version = "1.52.3", features = ["full"] }
 bytes = "1.7.1"
-tokio-stream = { version = "0.1.16", features = ["sync"] }
-image = "0.25.10"
-virtualcam = "0.1.1"
+image = { version = "0.25.0", default-features = false, features = ["jpeg"] }
+windows = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_System_Memory",
+    "Win32_System_Threading",
+    "Win32_Security"
+] }
