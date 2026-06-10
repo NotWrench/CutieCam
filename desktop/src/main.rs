@@ -1,6 +1,6 @@
 mod adb;
-mod server;
 mod video;
+mod virtual_cam;
 
 use anyhow::Context;
 use std::sync::Arc;
@@ -10,9 +10,7 @@ use tokio::sync::broadcast;
 async fn main() -> anyhow::Result<()> {
     let devices = adb::get_devices().await?;
     if devices.is_empty() {
-        anyhow::bail!(
-            "No Android devices found. Please connect a device and enable USB Debugging."
-        );
+        anyhow::bail!("No Android devices found. Please connect a device and enable USB Debugging.");
     }
 
     println!("Connected devices:");
@@ -33,23 +31,18 @@ async fn main() -> anyhow::Result<()> {
     };
 
     if device.state != "device" {
-        anyhow::bail!(
-            "Device is unauthorized. Please check your phone screen and accept the ADB connection prompt."
-        );
+        anyhow::bail!("Device is unauthorized. Please check your phone screen and accept the ADB connection prompt.");
     }
 
     println!("\nSelected device: {}", device.id);
 
     let local_port = 7879;
     let remote_port = 8080;
-    println!(
-        "Forwarding Local TCP:{} -> Android TCP:{}",
-        local_port, remote_port
-    );
+    println!("Forwarding Local TCP:{} -> Android TCP:{}", local_port, remote_port);
     adb::forward_port(&device.id, local_port, remote_port).await?;
 
     let (tx, _rx) = broadcast::channel(16);
-    let app_state = Arc::new(server::AppState {
+    let app_state = Arc::new(virtual_cam::AppState {
         frame_rx: tx.clone(),
     });
 
@@ -57,12 +50,10 @@ async fn main() -> anyhow::Result<()> {
         video::run_video_receiver(local_port, tx).await;
     });
 
-    let server_port = 7878;
-
     tokio::select! {
-        res = server::run_server(server_port, app_state) => {
+        res = virtual_cam::run_virtual_camera(app_state) => {
             if let Err(e) = res {
-                eprintln!("Server error: {}", e);
+                eprintln!("Virtual Camera error: {}", e);
             }
         },
         _ = tokio::signal::ctrl_c() => {
