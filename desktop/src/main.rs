@@ -15,7 +15,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
-    println!("📱 Connected devices:");
+    println!("Connected devices:");
     for (i, dev) in devices.iter().enumerate() {
         println!("  [{}] {} ({})", i, dev.id, dev.state);
     }
@@ -70,7 +70,7 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    println!("🧹 Cleaning up ADB port forwards...");
+    println!("Cleaning up ADB port forwards...");
     adb::remove_forward(&device.id, local_port).await?;
 
     Ok(())

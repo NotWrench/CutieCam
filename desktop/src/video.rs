@@ -14,7 +14,7 @@ pub async fn run_video_receiver(local_port: u16, tx: broadcast::Sender<Bytes>) {
                     let mut len_buf = [0u8; 4];
 
                     if stream.read_exact(&mut len_buf).await.is_err() {
-                        println!("⚠Android disconnected. Reconnecting in 2 seconds...");
+                        println!("Android disconnected. Reconnecting in 2 seconds...");
                         break;
                     }
 
@@ -28,7 +28,7 @@ pub async fn run_video_receiver(local_port: u16, tx: broadcast::Sender<Bytes>) {
                     let mut frame_buf = vec![0u8; frame_len];
 
                     if stream.read_exact(&mut frame_buf).await.is_err() {
-                        println!("⚠Android disconnected during frame read. Reconnecting in 2 seconds...");
+                        println!("Android disconnected during frame read. Reconnecting in 2 seconds...");
                         break;
                     }
 
