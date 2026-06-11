@@ -3,8 +3,10 @@ package com.notwrench.cutiecam
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.os.Bundle
 import android.util.Log
+import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -26,6 +28,8 @@ class MainActivity : androidx.activity.ComponentActivity() {
     private lateinit var viewFinder: PreviewView
     private lateinit var cameraExecutor: ExecutorService
 
+    private var lensFacing = CameraSelector.LENS_FACING_BACK
+
     private val frameQueue = ArrayBlockingQueue<ByteArray>(1)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,6 +38,16 @@ class MainActivity : androidx.activity.ComponentActivity() {
 
         viewFinder = findViewById(R.id.viewFinder)
         cameraExecutor = Executors.newSingleThreadExecutor()
+
+        val btnFlipCamera = findViewById<Button>(R.id.btnFlipCamera)
+        btnFlipCamera.setOnClickListener {
+            lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
+                CameraSelector.LENS_FACING_FRONT
+            } else {
+                CameraSelector.LENS_FACING_BACK
+            }
+            startCamera()
+        }
 
         if (allPermissionsGranted()) {
             startCamera()
@@ -49,8 +63,7 @@ class MainActivity : androidx.activity.ComponentActivity() {
                 startCamera()
                 startStreamingServer()
             } else {
-                Toast.makeText(this, "Permissions not granted by the user.", Toast.LENGTH_SHORT)
-                    .show()
+                Toast.makeText(this, "Permissions not granted by the user.", Toast.LENGTH_SHORT).show()
                 finish()
             }
         }
@@ -71,10 +84,21 @@ class MainActivity : androidx.activity.ComponentActivity() {
                 .also {
                     it.setAnalyzer(cameraExecutor) { imageProxy ->
                         try {
-                            val bitmap = imageProxy.toBitmap()
+                            val originalBitmap = imageProxy.toBitmap()
+
+                            val matrix = Matrix()
+                            matrix.postRotate(90f)
+
+                            if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
+                                matrix.postScale(-1f, 1f)
+                            }
+
+                            val finalBitmap = Bitmap.createBitmap(
+                                originalBitmap, 0, 0, originalBitmap.width, originalBitmap.height, matrix, true
+                            )
 
                             val stream = ByteArrayOutputStream()
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 60, stream)
+                            finalBitmap.compress(Bitmap.CompressFormat.JPEG, 60, stream)
                             val jpegData = stream.toByteArray()
 
                             frameQueue.poll()
@@ -88,7 +112,9 @@ class MainActivity : androidx.activity.ComponentActivity() {
                     }
                 }
 
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            val cameraSelector = CameraSelector.Builder()
+                .requireLensFacing(lensFacing)
+                .build()
 
             try {
                 cameraProvider.unbindAll()

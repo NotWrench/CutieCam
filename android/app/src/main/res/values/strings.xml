@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">CutieCam</string>
+    <string name="flip_camera">Flip Camera</string>
 </resources>
